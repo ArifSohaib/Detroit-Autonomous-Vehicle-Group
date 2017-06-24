@@ -32,7 +32,8 @@ class NeuralNetwork(object):
 class RCControl(object):
 
     def __init__(self):
-        self.serial_port = serial.Serial('/dev/tty.usbmodem1421', 115200, timeout=1)
+        # self.serial_port = serial.Serial('/dev/tty.usbmodem1421', 115200, timeout=1)
+         self.serial_port = serial.Serial('/dev/ttyACM0', 115200, timeout=.1)
 
     def steer(self, prediction):
         if prediction == 2:
