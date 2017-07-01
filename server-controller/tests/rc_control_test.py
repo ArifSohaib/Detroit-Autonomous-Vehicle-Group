@@ -5,6 +5,7 @@ import serial
 import pygame
 from pygame.locals import *
 from ports import get_serial_ports
+import ultrasonic_stop
 
 class RCTest(object):
 
@@ -15,20 +16,23 @@ class RCTest(object):
         screen = pygame.display.set_mode((400, 300))
         self.send_inst = True
         self.steer()
+        self.stopping = False
 
     def select_port(self, port_list):
         # remove known ports that might get in the way
         for p in port_list:
             if 'bluetooth' in p.lower():
                 port_list.remove(p)
-                
+
         if len(port_list) == 1:
             print("connecting to", port_list[0])
             return serial.Serial(port_list[0], 115200, timeout=1)
+        else:
+            print(port_list)
 
         print("Multiple ports detected:")
         i = 0
-        for port in port_list:    
+        for port in port_list:
             print(i,port)
             i+=1
         selected = int(input("please select the port you would like: "))
@@ -43,25 +47,51 @@ class RCTest(object):
         #     print("printing char:", chr(1))
         #     time.sleep(1)
         #     if yeah:
-        #         ser.write(chr(1))    
+        #         ser.write(chr(1))
         #     else:
-        #         ser.write(chr(0))   
+        #         ser.write(chr(0))
         #     yeah = not yeah
         # return
+
         while self.send_inst:
             for event in pygame.event.get():
                 # print("hi")
                 if event.type == KEYDOWN:
                     key_input = pygame.key.get_pressed()
                     move_car(key_input, self.ser)
-                    
+
 
                 elif event.type == pygame.KEYUP:
                     key_input = pygame.key.get_pressed()
                     move_car(key_input, self.ser)
                     # ser.write(b'0')
+                else:
+                    stopping = False
+                    move_car_auto(self.ser, stopping)
 
-                time.sleep(.001)
+                time.sleep(1)
+
+def move_car_auto(ser, stopping):
+    sensor = ultrasonic_stop.SensorStreamingTest()
+
+    for val in sensor.streaming():
+        if val < 100:
+            # stopping = True
+
+            if stopping == False:
+                stopping = True
+                stop_time = time.time()
+            if time.time() - stop_time < 0.5:
+
+                ser.write(b'2')
+            else:
+                ser.write(b'0')
+
+            # print("stopped")
+            # continue
+        else:
+            stopping = False
+            ser.write(b'1')
 
 def move_car(key_input, ser):
     # complex orders
